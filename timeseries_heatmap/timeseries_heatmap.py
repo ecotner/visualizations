@@ -15,66 +15,65 @@ problem, and could be more colorful.
 
 from matplotlib.pyplot import hist2d
 from matplotlib.colors import LogNorm, Normalize
+from copy import copy
+import matplotlib.cm as cm
 import numpy as np
 
 def ts_heatmap(Y, t=None, pts_per_bin=None, n_interp=None,
-				colorscale=None, **kwargs):
-	"""
-	Produces a heatmap of a collection of time series.
+				colorscale=None, cmap='viridis', **kwargs):
+    """
+    Produces a heatmap of a collection of time series.
 
-	Arguments:
-		Y : array
-			Array of shape (m,n) containing time series values, where m is
-			number of time series, and n is number of points per time
-			series. Expects the length of each time series to be the same.
-		t : array
-			Array containing the values of the time steps. Should be length
-			m, corresponding to the length of the 1st axis of Y.
+    Arguments:
+        Y : array
+            Array of shape (m,n) containing time series values, where m is
+            number of time series, and n is number of points per time
+            series. Expects the length of each time series to be the same.
+        t : array
+            Array containing the values of the time steps. Should be length
+            m, corresponding to the length of the 1st axis of Y.
 
-	Returns:
-		None
-	"""
-	aspect_ratio = (1+np.sqrt(5))/2
-	default_n_bins_y = 300
-	default_n_bins_x = default_n_bins_y * aspect_ratio
-	default_pts_per_bin = 10
+    Returns:
+        matplotlib figure??
+    """
+    aspect_ratio = (1+np.sqrt(5))/2
+    default_n_bins_y = 200
+    default_n_bins_x = default_n_bins_y * aspect_ratio
+    default_pts_per_bin = 20
 
-	Y = np.array(Y)
-	assert len(Y.shape) == 2, "Y should have 2 dimensions"
-	if t is None:
-		t = np.arange(Y.shape[-1])
-	t = np.array(t)
-	if n_interp is None:
-		n_interp = round(default_n_bins_x/(len(t)-1) - 1)
-	if pts_per_bin is None:
-		pts_per_bin = default_pts_per_bin
-	if (colorscale == 'linear') or (colorscale is None):
-		norm = Normalize()
-	elif colorscale == 'log':
-		norm = LogNorm()
+    Y = np.array(Y)
+    assert len(Y.shape) == 2, "Y should have 2 dimensions"
+    if t is None:
+        t = np.arange(Y.shape[-1]).astype(int)
+    t = np.array(t)
+    if n_interp is None:
+        n_interp = int(round(default_n_bins_x/(len(t)-1) - 1))
+    if pts_per_bin is None:
+        pts_per_bin = default_pts_per_bin
 
-	# Combine domain and range
-	Y0 = np.ones(Y.shape) * t[np.newaxis,:]
-	Y = np.stack([Y0, Y], axis=2)
+    # Combine domain and range
+    Y0 = np.ones(Y.shape) * t[np.newaxis,:]
+    Y = np.stack([Y0, Y], axis=2)
 
-	# Interpolate between points
-	Y1 = Y[:,:-1,:]; Y2 = Y[:,1:,:]
-	Y = list()
-	for x in np.linspace(0, 1, n_interp+2)[:-1]:
-		Y.append(x*Y1 + (1-x)*Y2)
-	Y = np.concatenate(Y, axis=0)
+    # Interpolate between points
+    Y1 = Y[:,:-1,:]; Y2 = Y[:,1:,:]
+    Y = list()
+    for x in np.linspace(0, 1, n_interp+2)[:-1]:
+        Y.append(x*Y1 + (1-x)*Y2)
+    Y = np.concatenate(Y, axis=0)
 
-	# Convert into collection of points
-	Y = Y.reshape(-1, 2)
+    # Convert into collection of points
+    Y = Y.reshape(-1, 2)
 
-	# Make 2d histogram
-	bins_x = (n_interp+1)*(len(t)-1)
-	bins_y = min(default_n_bins_y, max(len(Y)//pts_per_bin, 10))
-	bins = [bins_x, bins_y]
-	return hist2d(Y[:,0], Y[:,1], bins=bins, norm=norm, **kwargs)
+    if (colorscale == 'linear') or (colorscale is None):
+        norm = Normalize()
+    elif colorscale == 'log':
+        norm = LogNorm(vmin=0.6)
+        cmap = copy(cm.get_cmap(cmap))
+        cmap.set_bad(cmap(0))
 
-
-
-
-
-
+    # Make 2d histogram
+    bins_x = (n_interp+1)*(len(t)-1)
+    bins_y = min(default_n_bins_y, max(len(Y)//pts_per_bin, 10))
+    bins = [bins_x, bins_y]
+    return hist2d(Y[:,0], Y[:,1], bins=bins, cmap=cmap, norm=norm, **kwargs)
