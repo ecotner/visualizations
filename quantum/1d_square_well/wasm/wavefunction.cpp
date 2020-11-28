@@ -30,14 +30,11 @@ class WaveFunction {
         psi = (double*) malloc(sizeof(double) * 2 * (L+1));
         psi_prev = (double*) malloc(sizeof(double) * 2 * (L+1));
         resetPsi(2.0*M_PI*p0/L, "gaussian");
-        // halfStep();
-        for (int i=0; i<L+1; i++) {
-            psi_prev[2*i] = psi[2*i];
-            psi_prev[2*i+1] = psi[2*i+1];
-        }
-        dt /= 1000;
-        multiStep(1000);
-        dt *= 1000;
+        halfStep();
+        // for (int i=0; i<L+1; i++) {
+        //     psi_prev[2*i] = psi[2*i];
+        //     psi_prev[2*i+1] = psi[2*i+1];
+        // }
     }
 
     // destructor; frees all the memory contained in the psi arrays
@@ -54,7 +51,6 @@ class WaveFunction {
         double rho;
         double sigma = L/10.;
         double p = 0.25;
-        // double N;
         for (int x=0; x<L+1; x++) {
             if (type == "gaussian") {
                 rho = exp(-pow(x - L/2, 2)/(2*pow(sigma, 2)));
@@ -72,8 +68,8 @@ class WaveFunction {
     void halfStep() {
         // iterate over all non-boundary points
         for (int x=1; x<L; x++) {
-            psi_next[2*x] = psi[2*x] + 0.5 * dt * (psi[2*(x-1)+1] - 2*psi[2*x+1] + 2*psi[2*(x+1)+1]);
-            psi_next[2*x+1] = psi[2*x+1] - 0.5 * dt * (psi[2*(x-1)] - 2*psi[2*x] + 2*psi[2*(x+1)]);
+            psi_next[2*x] = psi[2*x] + 0.5 * dt * (psi[2*(x-1)+1] - 2*psi[2*x+1] + psi[2*(x+1)+1]);
+            psi_next[2*x+1] = psi[2*x+1] - 0.5 * dt * (psi[2*(x-1)] - 2*psi[2*x] + psi[2*(x+1)]);
         }
         // update boundary points
         psi_next[0] = 0.; psi_next[1] = 0.; // left side
@@ -92,8 +88,8 @@ class WaveFunction {
         // iterate over all non-boundary points
         double lap_re, lap_im;
         for (int x=1; x<L; x++) {
-            lap_re = psi[2*(x-1)] - 2*psi[2*x] + 2*psi[2*(x+1)];
-            lap_im = psi[2*(x-1)+1] - 2*psi[2*x+1] + 2*psi[2*(x+1)+1]; // creates problems on right boundary
+            lap_re = psi[2*(x-1)] - 2*psi[2*x] + psi[2*(x+1)];
+            lap_im = psi[2*(x-1)+1] - 2*psi[2*x+1] + psi[2*(x+1)+1]; // creates problems on right boundary
             psi_next[2*x] = psi_prev[2*x] + dt * lap_im;
             psi_next[2*x+1] = psi_prev[2*x+1] - dt * lap_re;
         }
