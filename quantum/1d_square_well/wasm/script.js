@@ -19,12 +19,12 @@ function draw(wf) {
         // ctx.lineTo(i, 0.02*yscale * (Math.log(wf.getPsiAbsSq(x)) + 50));
     }
     ctx.stroke();
-    wf.multiStep(500);
+    wf.multiStep(100);
     window.requestAnimationFrame(function () {draw(wf)});
 }
 
 function run() {
-    var wf = new Module.WaveFunction(500, 1e-1, 5.0);
+    var wf = new Module.WaveFunction(500, 0.5, 5.0);
     draw(wf);
 }
 

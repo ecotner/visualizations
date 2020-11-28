@@ -20,21 +20,17 @@ class WaveFunction {
     // @param num_points (int): number of grid points to simulate
     // @param p0 (double): initial momentum, as multiples of 2*pi/(L+1)
     // @returns NULL
-    WaveFunction(int length, double dt_, double p0) {
+    WaveFunction(int length, double dt, double p0) {
         L = length;
-        dt = dt_;
+        this->dt = dt;
         // psi will contain both real/imag parts; alternate elements
-        // starting with psi[0] = real, psi[1] = imag, ...
+        // starting with psi[0] = real, psi[1] = imag, psi[2] = real, ...
         // Will initialize three arrays to hold everything
         psi_next = (double*) malloc(sizeof(double) * 2 * (L+1));
         psi = (double*) malloc(sizeof(double) * 2 * (L+1));
         psi_prev = (double*) malloc(sizeof(double) * 2 * (L+1));
         resetPsi(2.0*M_PI*p0/L, "gaussian");
         halfStep();
-        // for (int i=0; i<L+1; i++) {
-        //     psi_prev[2*i] = psi[2*i];
-        //     psi_prev[2*i+1] = psi[2*i+1];
-        // }
     }
 
     // destructor; frees all the memory contained in the psi arrays
@@ -68,14 +64,12 @@ class WaveFunction {
     void halfStep() {
         // iterate over all non-boundary points
         for (int x=1; x<L; x++) {
-            psi_next[2*x] = psi[2*x] + 0.5 * dt * (psi[2*(x-1)+1] - 2*psi[2*x+1] + psi[2*(x+1)+1]);
-            psi_next[2*x+1] = psi[2*x+1] - 0.5 * dt * (psi[2*(x-1)] - 2*psi[2*x] + psi[2*(x+1)]);
+            psi_next[2*x] = psi[2*x] - 0.5 * dt * (psi[2*(x-1)+1] - 2*psi[2*x+1] + psi[2*(x+1)+1]);
+            psi_next[2*x+1] = psi[2*x+1] + 0.5 * dt * (psi[2*(x-1)] - 2*psi[2*x] + psi[2*(x+1)]);
         }
         // update boundary points
         psi_next[0] = 0.; psi_next[1] = 0.; // left side
         psi_next[2*L] = 0.; psi_next[2*L+1] = 0.; // right side
-        // psi_next[0] = psi[0]; psi_next[1] = psi[1]; // left side
-        // psi_next[2*L] = psi[2*L]; psi_next[2*L+1] = psi[2*L+1]; // right side
         // swap pointers
         double* temp = psi_prev;
         this->psi_prev = psi;
@@ -90,14 +84,12 @@ class WaveFunction {
         for (int x=1; x<L; x++) {
             lap_re = psi[2*(x-1)] - 2*psi[2*x] + psi[2*(x+1)];
             lap_im = psi[2*(x-1)+1] - 2*psi[2*x+1] + psi[2*(x+1)+1]; // creates problems on right boundary
-            psi_next[2*x] = psi_prev[2*x] + dt * lap_im;
-            psi_next[2*x+1] = psi_prev[2*x+1] - dt * lap_re;
+            psi_next[2*x] = psi_prev[2*x] - dt * lap_im;
+            psi_next[2*x+1] = psi_prev[2*x+1] + dt * lap_re;
         }
         // update boundary points
         psi_next[0] = 0.; psi_next[1] = 0.; // left side
         psi_next[2*L] = 0.; psi_next[2*L+1] = 0.; // right side
-        // psi_next[0] = psi[0]; psi_next[1] = psi[1]; // left side
-        // psi_next[2*L] = psi[2*L]; psi_next[2*L+1] = psi[2*L+1]; // right side
         // swap pointers
         double* temp = psi_prev;
         this->psi_prev = psi;
@@ -164,7 +156,21 @@ class WaveFunction {
     double dt;
 };
 
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_BINDINGS(wave_function_module) {
+    emscripten::class_<WaveFunction>("WaveFunction")
+    .constructor<int, double, double>()
+    .function("halfStep", &WaveFunction::halfStep)
+    .function("step", &WaveFunction::step)
+    .function("multiStep", &WaveFunction::multiStep)
+    .function("getPsiRe", &WaveFunction::getPsiRe)
+    .function("getPsiIm", &WaveFunction::getPsiIm)
+    .function("getPsiAbsSq", &WaveFunction::getPsiAbsSq)
+    .function("getL", &WaveFunction::getL)
+    ;
+}
 
+#else
 int main() {
     WaveFunction psi(500, 1e-3, 2);
     // printf("wave function values:\n");
@@ -178,19 +184,5 @@ int main() {
         printf("next: %p\n\n", psi.psi_next);
         psi.step();
     }
-}
-
-#ifdef __EMSCRIPTEN__
-EMSCRIPTEN_BINDINGS(wave_function_module) {
-    emscripten::class_<WaveFunction>("WaveFunction")
-    .constructor<int, double, double>()
-    .function("halfStep", &WaveFunction::halfStep)
-    .function("step", &WaveFunction::step)
-    .function("multiStep", &WaveFunction::multiStep)
-    .function("getPsiRe", &WaveFunction::getPsiRe)
-    .function("getPsiIm", &WaveFunction::getPsiIm)
-    .function("getPsiAbsSq", &WaveFunction::getPsiAbsSq)
-    .function("getL", &WaveFunction::getL)
-    ;
 }
 #endif

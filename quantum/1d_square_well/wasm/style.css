@@ -3,6 +3,22 @@ canvas {
     background-color: wheat;
 }
 
+#title {
+    color: white;
+}
+
+#title a {
+    font-size: 10px;
+}
+
 body {
     background-color: black;
+}
+
+#canvas-div {
+    display: flex;
+    height: 100vh;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
