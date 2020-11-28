@@ -5,4 +5,4 @@ This code here is an example of using wasm to create a simulation of a quantum p
 The mechanics of the simulation are written in C++ (`wavefunction.cpp` file), where we define a `WaveFunction` class which initializes the wavefunction in the class constructor and evolves the state through time using a `.step()` method.
 We can use the Emscripten compiler `emcc` to produce a `module.wasm` WebAssembly binary and `module.js` "glue code" in order to access and manipulate the `WaveFunction` object directly in JavaScript (the `script.js` file)!
 
-[Click here](./index.html) to see the simulation in action!
+[Click here](https://ecotner.github.io/visualizations/quantum/1d_square_well/wasm/) to see the simulation in action!
