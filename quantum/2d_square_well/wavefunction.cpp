@@ -84,8 +84,8 @@ class WaveFunction {
         // set interior points
         for (int x=0; x<Lx; x++) {
             for (int y=0; y<Ly; y++) {
-                rho = exp(-(pow(x-x0, 2) + pow(y-y0, 2))/(2*pow(s0, 2)));
-                theta = px0*x + py0*y;
+                rho = exp(-(pow(dx*x-x0, 2) + pow(dx*y-y0, 2))/(2*pow(s0, 2)));
+                theta = dx*(px0*x + py0*y);
                 psi[1][RE][Lx*x+y] = rho * cos(theta);
                 psi[1][IM][Lx*x+y] = rho * sin(theta);
             }
@@ -108,51 +108,44 @@ class WaveFunction {
     }
 
     // Performs FTCS update step
-    void stepFTCS(double dt, double m, double qB) {
+    void stepFTCS(double dt, double B) {
         // define a bunch of constants to save us from redoing
         // calculations in the loops
         int xy, xp1, xm1, yp1, ym1;
         double dx2 = dx * dx;
-        double qB4dx = (qB*dx/4);
-        double q2B24dx2 = qB*qB*dx2/4;
-        double dt2mdx2 = dt / (2 * m * dx2);
+        double Bdx = B*dx;
+        double B2dx4_4 = B*B*dx2*dx2/4;
+        double dtdx2 = dt/dx2;
         // iterate over interior points
         for (int x=1; x<Lx-1; x++) {
             for (int y=1; y<Ly-1; y++) {
                 // update some commonly used values/indexes for stencil
-                double r2 = x*x + y*y;
                 xy = Lx*x+y;
                 xp1 = Lx*(x+1)+y;
                 xm1 = Lx*(x-1)+y;
                 yp1 = Lx*x+(y+1);
                 ym1 = Lx*x+(y-1);
+                // the effective scalar potential
+                double Gamma = B2dx4_4 * (x*x + y*y);
                 // update real part
-                psi[2][RE][xy] = psi[1][RE][xy] + (
-                    // kinetic terms
-                    dt2mdx2 * (
-                        - ( // laplacian (\nabla^2 \psi)
-                            psi[1][IM][xp1] + psi[1][IM][xm1] + psi[1][IM][yp1]
-                            + psi[1][IM][ym1] - 4*psi[1][IM][xy])
-                        + qB4dx * ( // convective derivative (A * \nabla \psi)
-                            x*(psi[1][RE][yp1] - psi[1][RE][ym1])
-                            -y*(psi[1][IM][xp1] - psi[1][RE][xm1]))
-                        + q2B24dx2 * r2 * psi[1][IM][xy] // A^2 * \psi
-                    )
-                    // + dt*(x+y)*psi[1][IM][xy] // potential (V * \psi)
+                psi[2][RE][xy] = psi[1][RE][xy] + dtdx2 * (
+                    - ( // laplacian (\nabla^2 \psi)
+                        psi[1][IM][xp1] + psi[1][IM][xm1] + psi[1][IM][yp1]
+                        + psi[1][IM][ym1] - 4*psi[1][IM][xy])
+                    + Bdx * ( // convective derivative (A * \nabla \psi)
+                        x*(psi[1][RE][yp1] - psi[1][RE][ym1])
+                        -y*(psi[1][IM][xp1] - psi[1][RE][xm1]))
+                    + Gamma * psi[1][IM][xy] // Γ * \psi
                 );
                 // update imaginary part
-                psi[2][IM][xy] = psi[1][IM][xy] + (
-                    // kinetic terms
-                    dt2mdx2 * (
-                        + ( // laplacian (\nabla^2 \psi)
-                            psi[1][RE][xp1] + psi[1][RE][xm1] + psi[1][RE][yp1]
-                            + psi[1][RE][ym1] - 4*psi[1][RE][xy])
-                        + qB4dx * ( // convective derivative (A * \nabla \psi)
-                            x*(psi[1][IM][yp1] - psi[1][IM][ym1])
-                            -y*(psi[1][IM][xp1] - psi[1][IM][xm1]))
-                        - q2B24dx2 * r2 * psi[1][RE][xy] // A^2 * \psi
-                    )
-                    // - dt*(x+y)*psi[1][RE][xy] // potential (V * \psi)
+                psi[2][IM][xy] = psi[1][IM][xy] + dtdx2 * (
+                    + ( // laplacian (\nabla^2 \psi)
+                        psi[1][RE][xp1] + psi[1][RE][xm1] + psi[1][RE][yp1]
+                        + psi[1][RE][ym1] - 4*psi[1][RE][xy])
+                    + Bdx * ( // convective derivative (A * \nabla \psi)
+                        x*(psi[1][IM][yp1] - psi[1][IM][ym1])
+                        -y*(psi[1][IM][xp1] - psi[1][IM][xm1]))
+                    - Gamma * psi[1][RE][xy] // Γ * \psi
                 );
             }
         }
@@ -182,51 +175,43 @@ class WaveFunction {
     }
 
     // CTCS update step
-    void step(double dt, double m, double qB) {
+    void step(double dt, double B) {
         // define a bunch of constants to save us from redoing
         // calculations in the loops
         int xy, xp1, xm1, yp1, ym1;
         double dx2 = dx * dx;
-        double qB4dx = (qB*dx/4);
-        double q2B24dx2 = qB*qB*dx2/4;
-        double dt2mdx2 = dt / (2 * m * dx2);
+        double Bdx = B*dx;
+        double B2dx4_4 = B*B*dx2*dx2/4;
+        double dt_dx2 = 2*dt/dx2;
         // iterate over interior points
         for (int x=1; x<Lx-1; x++) {
             for (int y=1; y<Ly-1; y++) {
                 // update some commonly used values/indexes for stencil
-                double r2 = dx2 * (x*x + y*y);
+                double Gamma = B2dx4_4 * (x*x + y*y);
                 xy = Lx*x+y;
                 xp1 = Lx*(x+1)+y;
                 xm1 = Lx*(x-1)+y;
                 yp1 = Lx*x+(y+1);
                 ym1 = Lx*x+(y-1);
                 // update real part
-                psi[2][RE][xy] = psi[0][RE][xy] + 2*(
-                    // kinetic terms
-                    dt2mdx2 * (
-                        - ( // laplacian (\nabla^2 \psi)
-                            psi[1][IM][xp1] + psi[1][IM][xm1] + psi[1][IM][yp1]
-                            + psi[1][IM][ym1] - 4*psi[1][IM][xy])
-                        + qB4dx * ( // convective derivative (A * \nabla \psi)
-                            x*(psi[1][RE][yp1] - psi[1][RE][ym1])
-                            -y*(psi[1][IM][xp1] - psi[1][RE][xm1]))
-                        + q2B24dx2 * r2 * psi[1][IM][xy] // A^2 * \psi
-                    )
-                    // + dt*(x+y)*psi[1][IM][xy] // potential (V * \psi)
+                psi[2][RE][xy] = psi[0][RE][xy] + dt_dx2 * (
+                    - ( // laplacian (\nabla^2 \psi)
+                        psi[1][IM][xp1] + psi[1][IM][xm1] + psi[1][IM][yp1]
+                        + psi[1][IM][ym1] - 4*psi[1][IM][xy])
+                    + Bdx * ( // convective derivative (A * \nabla \psi)
+                        x*(psi[1][RE][yp1] - psi[1][RE][ym1])
+                        -y*(psi[1][IM][xp1] - psi[1][RE][xm1]))
+                    + Gamma * psi[1][IM][xy] // A^2 * \psi
                 );
                 // update imaginary part
-                psi[2][IM][xy] = psi[0][IM][xy] + 2*(
-                    // kinetic terms
-                    dt2mdx2 * (
-                        + ( // laplacian (\nabla^2 \psi)
-                            psi[1][RE][xp1] + psi[1][RE][xm1] + psi[1][RE][yp1]
-                            + psi[1][RE][ym1] - 4*psi[1][RE][xy])
-                        + qB4dx * ( // convective derivative (A * \nabla \psi)
-                            x*(psi[1][IM][yp1] - psi[1][IM][ym1])
-                            -y*(psi[1][IM][xp1] - psi[1][IM][xm1]))
-                        - q2B24dx2 * r2 * psi[1][RE][xy] // A^2 * \psi
-                    )
-                    // - dt*(x + y)*psi[1][RE][xy] // potential (V * \psi)
+                psi[2][IM][xy] = psi[0][IM][xy] + dt_dx2 * (
+                    + ( // laplacian (\nabla^2 \psi)
+                        psi[1][RE][xp1] + psi[1][RE][xm1] + psi[1][RE][yp1]
+                        + psi[1][RE][ym1] - 4*psi[1][RE][xy])
+                    + Bdx * ( // convective derivative (A * \nabla \psi)
+                        x*(psi[1][IM][yp1] - psi[1][IM][ym1])
+                        -y*(psi[1][IM][xp1] - psi[1][IM][xm1]))
+                    - Gamma * psi[1][RE][xy] // A^2 * \psi
                 );
             }
         }
@@ -255,9 +240,9 @@ class WaveFunction {
         }
     }
 
-    void multiStep(int n_steps, double dt, double m, double qB) {
+    void multiStep(int n_steps, double dt, double B) {
         for (int i=0; i<n_steps; i++) {
-            step(dt, m, qB);
+            step(dt, B);
         }
     }
 
@@ -321,7 +306,7 @@ EMSCRIPTEN_BINDINGS(wave_function) {
 int main() {
     WaveFunction wf = WaveFunction(100, 100, 1.0, 50.0, 50.0, 0.0, 0.0, 5.0, "dirichlet");
     for (int i=0; i<10; i++) {
-        wf.stepFTCS(0.5, 1.0, 1e-3);
+        wf.stepFTCS(0.5, 1e-3);
         printf("%f\n", wf.abs2(50, 50));
     }
 }

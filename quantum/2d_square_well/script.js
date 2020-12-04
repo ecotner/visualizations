@@ -1,6 +1,6 @@
 // initialize canvases
-var L = 50;
-var qB = 0;
+var L = 100;
+var B = 1e-3;
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 var canvasWidth = canvas.width;
@@ -35,20 +35,26 @@ function draw(wf) {
 }
 
 function run() {
-    var dt = 5e-1;
+    var dt = 1e-5;
     var N = 100;
-    var m = 10;
-    var dx = 1.;
+    var dx = 0.1;
     var wf = new Module.WaveFunction(
-        L, L, dx, L/2., L/4., 5./L, 5./L, L/10., "dirichlet");
-    wf.stepFTCS(dt, m, qB);
-    function asdf() {
+        L, L, dx, dx*L/2., dx*L/4., 5.0/(dx*L), 5.0/(dx*L), 1., "dirichlet");
+    wf.stepFTCS(dt, B);
+    var t1 = 0.
+    function asdf(t2) {
         draw(wf);
-        wf.multiStep(N, dt, m, qB);
-        // console.log(wf.abs2(L/2, L/2));
+        wf.multiStep(N, dt, B);
+        t_frame = t2 - t1;
+        t1 = t2;
+        console.log(t_frame);
+        // console.log(wf.abs2(dx*L/2, dx*L/2));
         window.requestAnimationFrame(asdf);
     }
-    asdf();
+    window.requestAnimationFrame(function (t2) {
+        t1 = t2;
+        window.requestAnimationFrame(asdf);
+    })
 }
 
 var Module = {onRuntimeInitialized: run};
