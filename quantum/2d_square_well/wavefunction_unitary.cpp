@@ -15,10 +15,30 @@
 #include <complex>
 #include <math.h>
 #include <stdio.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/bind.h>
+#endif
 
 using namespace std;
-
 complex<double> I (0, 1);
+
+// bilinear interpolation on a square
+double interp2d(
+    int xL, int xH,
+    int yL, int yH,
+    double z11, double z12, double z21, double z22,
+    double x, double y) {
+    // interpolate along x direction first
+    double fx1, fx2, dx = xH - xL;
+    if (xL == xH) {fx1 = z11; fx2 = z12;}
+    else {
+        fx1 = z11 + (z21 - z11) * (x - xL) / dx;
+        fx2 = z12 + (z22 - z12) * (x - xL) / dx;
+    }
+    // interpolate along y direction now
+    if (yH == yL) return (fx1 + fx2) / 2;
+    else return fx1 + (fx2 - fx1) * (y - yL) / (yH - yL);
+}
 
 class WaveFunction {
     public:
@@ -62,13 +82,13 @@ class WaveFunction {
             }
         }
         // Precompute/cache repeatedly used variables
-        precomputeArrays();
+        precomputeArrays(B);
         // Initialize wave function
         initializePsi(x0, y0, s0, px0, py0);
     }
 
     // Pre-computes the ca, cb, sa, sb arrays to save FLOPS during time evolution
-    void precomputeArrays() {
+    void precomputeArrays(double B) {
         // Assuming uniform magnetic field in z direction with gauge \vec{A} = (A, 0, 0) implies A = -B*y
         double Ca0 = 5./(dx*dx);
         double Ca1 = -(4./(3*dx*dx));
@@ -88,8 +108,6 @@ class WaveFunction {
                     ca[k][xy] = cos(abs(a[k])*dt);
                     sa[0][k][xy] = I * (a[k]/abs(a[k])) * sin(abs(a[k])*dt);
                     sa[1][k][xy] = I * (conj(a[k])/abs(a[k])) * sin(abs(a[k])*dt);
-                    //printf("sa[0][%i][%i] = (%f, %f)\n", k, xy, sa[0][k][xy].real(), sa[0][k][xy].imag());
-                    //printf("sa[1][%i][%i] = (%f, %f)\n", k, xy, sa[1][k][xy].real(), sa[1][k][xy].imag());
                 }
 
                 // beta computations
@@ -243,16 +261,43 @@ class WaveFunction {
     }
 
     // Performs a single time step
-    void step() {
-        substep_H1();
-        substep_H2();
-        substep_H3();
-        substep_H4();
-        substep_H5();
-        substep_H6();
-        substep_H7();
-        substep_H8();
-        substep_H9();
+    void step(int n=1) {
+        for (int i=0; i<n; i++) {
+            substep_H1();
+            substep_H2();
+            substep_H3();
+            substep_H4();
+            substep_H5();
+            substep_H6();
+            substep_H7();
+            substep_H8();
+            substep_H9();
+        }
+    }
+
+    // Return absolute square of wave function at interpolated point
+    double abs2(double x, double y) {
+        x /= dx; y /= dx;
+        int xL = (int) floor(x);
+        int xH = (int) ceil(x);
+        int yL = (int) floor(y);
+        int yH = (int) ceil(y);
+        double z11 = norm(psi[Nx*xL+yL]);
+        double z21 = norm(psi[Nx*xH+yL]);
+        double z12 = norm(psi[Nx*xL+yH]);
+        double z22 = norm(psi[Nx*xH+yH]);
+        return interp2d(xL, xH, yL, yH, z11, z12, z21, z22, x, y);
+    }
+
+    // Return total probability mass of wave function
+    double probMass() {
+        double prob = 0;
+        for (int i=0; i<Nx; i++) {
+            for (int j=0; j<Ny; j++) {
+                prob += norm(psi[Nx*i+j]);
+            }
+        }
+        return dx*dx*prob;
     }
 
     // Destructor; frees memory
@@ -284,17 +329,30 @@ class WaveFunction {
 };
 
 #ifdef __EMSCRIPTEN__
+EMSCRIPTEN_BINDINGS(wave_function) {
+    emscripten::class_<WaveFunction>("WaveFunction")
+    .constructor<int,int,double,double,double,double,double,double,double,double>()
+    .function("step", &WaveFunction::step)
+    .function("abs2", &WaveFunction::abs2)
+    .function("probMass", &WaveFunction::probMass)
+    ;
+}
 
 #else
 int main() {
+    double dx = 1e-3;
+    double dt = 1e-1;
+    int N = 100;
     WaveFunction wf (
-        10, 10, // Nx, Ny
-        1e-3, 1e-3, // dx, dt
+        N, N, // Nx, Ny
+        dx, dt, // dx, dt
         1., // B
-        5e-3, 5e-3, 1e-3, // x0, y0, s0
-        0.5*2*M_PI/10e-3, 0.5*2*M_PI/10e-3 // px0, py0
+        5*dx, 5*dx, 2.*dx, // x0, y0, s0
+        0.5*2*M_PI/(N*dx), 0.5*2*M_PI/(N*dx) // px0, py0
     );
-    wf.step();
+    printf("prob. mass before step: %f\n", wf.probMass());
+    for (int i=0; i<1000; i++) wf.step();
+    printf("prob. mass after step: %f\n", wf.probMass());
 }
 
 #endif
