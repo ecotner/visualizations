@@ -1,6 +1,6 @@
 // initialize canvases
-var L = 100;
-var B = 1e-3;
+var L = 50;
+var B = 1e-1;
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 var canvasWidth = canvas.width;
@@ -22,7 +22,7 @@ function draw(wf) {
             var offset = 4*(id.width * j + i);
             var psi = wf.abs2(i * scaleX, j * scaleY);
             // var intensity = 1e1*(Math.log10(psi) + 15);
-            var intensity = Math.floor(1000*psi);
+            var intensity = Math.floor(500*psi);
             // pixels[offset] = intensity;
             pixels[offset] = 255 - intensity;
             pixels[offset+1] = 255 - intensity;

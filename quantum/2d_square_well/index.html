@@ -5,10 +5,22 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="content-container">
+    <div id="outer-container">
         <h1 id="title">Quantum 2D particle in an electromagnetic field</h1>
-        <canvas id="canvas" width="300px" height="300px"></canvas>
+        <div id="inner-container">
+            <div id="canvas-and-controls">
+                <canvas id="canvas" width="300px" height="300px"></canvas>
+                <div id="controls">
+                    <button id="start-button">Start</button>
+                    <button id="pause-button">Pause</button>
+                    <button id="reset-button">Reset</button>
+                </div>
+            </div>
+            <div id="parameters">
+                <input type="range">
+            </div>
+        </div>
     </div>
-    <script src="script.js"></script>
+    <script src="script_unitary.js"></script>
     <script src="module.js"></script>
 </body>

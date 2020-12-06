@@ -1,6 +1,7 @@
 canvas {
-    border: 1px solid black;
+    border: 1px solid red;
     background-color: wheat;
+    margin: 15px;
 }
 
 #title {
@@ -9,12 +10,32 @@ canvas {
 
 body {
     background-color: black;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
-#content-container {
+#outer-container {
     display: flex;
     height: 100vh;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+}
+
+#inner-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+#canvas-and-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#parameters {
+
 }
