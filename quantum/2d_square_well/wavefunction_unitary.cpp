@@ -55,6 +55,8 @@ class WaveFunction {
         double dx,
         double dt,
         double B,
+        double Ex,
+        double Ey,
         double x0,
         double y0,
         double s0,
@@ -82,13 +84,13 @@ class WaveFunction {
             }
         }
         // Precompute/cache repeatedly used variables
-        precomputeArrays(B);
+        precomputeArrays(B, Ex, Ey);
         // Initialize wave function
         initializePsi(x0, y0, s0, px0, py0);
     }
 
     // Pre-computes the ca, cb, sa, sb arrays to save FLOPS during time evolution
-    void precomputeArrays(double B) {
+    void precomputeArrays(double B, double Ex, double Ey) {
         // Assuming uniform magnetic field in z direction with gauge \vec{A} = (A, 0, 0) implies A = -B*y
         double Ca0 = 5./(dx*dx);
         double Ca1 = -(4./(3*dx*dx));
@@ -101,7 +103,7 @@ class WaveFunction {
                 int xy = Nx*i+j;
                 A0 = -B*(j*dx); A1 = -B*((j+1)*dx); A2 = -B*((j+2)*dx);
                 // alpha computations
-                a[0] = Ca0 + A0*A0; // + U... TODO: add support for scalar potential
+                a[0] = Ca0 + A0*A0 - dx*(i*Ex + j*Ey);
                 a[1] = Ca1 * (1. - I*0.5*dx*(A0 + A1));
                 a[2] = Ca2 * (1. - I*dx*(A0 + A2));
                 for (int k=0; k<3; k++) {
@@ -331,7 +333,7 @@ class WaveFunction {
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_BINDINGS(wave_function) {
     emscripten::class_<WaveFunction>("WaveFunction")
-    .constructor<int,int,double,double,double,double,double,double,double,double>()
+    .constructor<int,int,double,double,double,double,double,double,double,double,double,double>()
     .function("step", &WaveFunction::step)
     .function("abs2", &WaveFunction::abs2)
     .function("probMass", &WaveFunction::probMass)
@@ -346,7 +348,7 @@ int main() {
     WaveFunction wf (
         N, N, // Nx, Ny
         dx, dt, // dx, dt
-        1., // B
+        1., 0., 0., // B, Ex, Ey
         5*dx, 5*dx, 2.*dx, // x0, y0, s0
         0.5*2*M_PI/(N*dx), 0.5*2*M_PI/(N*dx) // px0, py0
     );

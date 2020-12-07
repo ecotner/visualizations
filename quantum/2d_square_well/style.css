@@ -4,7 +4,7 @@ canvas {
     margin: 15px;
 }
 
-#title {
+h1, h2, h3, h4, h5, h6, p {
     color: white;
 }
 
@@ -37,5 +37,32 @@ body {
 }
 
 #parameters {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-items: center;
+}
 
+#param-title {margin: 0px;}
+
+.data {
+    white-space: pre;
+}
+
+input {
+    width: 200px;
+}
+
+#x0-slider, #y0-slider, #p0-slider, #theta0-slider, #E-slider, #E-theta-slider {
+    width: 80px;
+}
+
+tr p {
+    padding: 0px;
+    margin: 0px;
+    font-size: small;
+}
+
+table {
+    border-spacing: 15px 0px;
 }

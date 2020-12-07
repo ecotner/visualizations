@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <head>
-    <meta lang="en-US" charset="utf-8">
+    <meta lang="en-US" http-equiv="content-type" content="text/html" charset="utf-8">
     <title>2D particle in electromagnetic field</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -17,7 +17,59 @@
                 </div>
             </div>
             <div id="parameters">
-                <input type="range">
+                <h3 id="param-title">Simulation parameters</h3>
+                <table>
+                    <tr>
+                        <td><p>N: <span id="N-value" class="data"></span></p></td>
+                        <td><input id="N-slider" type="range" min=2 max=300 step=1></td>
+                    </tr>
+                    <tr>
+                        <td><p>dx: <span id="dx-value" class="data"></span>/m</p></td>
+                        <td><input id="dx-slider" type="range" min=-3 max=1 step=0.1></td>
+                    </tr>
+                    <tr>
+                        <td><p>dt: <span id="dt-value" class="data"></span>/m</p></td>
+                        <td><input id="dt-slider" type="range" min=-5 max=2 step=0.1></td>
+                    </tr>
+                    <tr>
+                        <td><p>Bz: <span id="B-value" class="data"></span> m²/q</p></td>
+                        <td><input id="B-slider" type="range" min=-5 max=5 step=0.01></td>
+                    </tr>
+                    <tr>
+                        <td><p>
+                            |E&#8407;|: <span id="E-value" class="data"></span> m²/q,
+                            θ: <span id="E-theta-value" class="data"></span>&#176;
+                        </p></td>
+                        <td style="display: flex; flex-direction: row;">
+                            <p>|E&#8407;|: </p><input id="E-slider" type="range" min=0 max=10 step=0.01>
+                            <p>, θ: </p><input id="E-theta-slider" type="range" min=0 max=360 step=1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><p>(x&#8320;, y&#8320;): (
+                            <span id="x0-value" class="data"></span>L, 
+                            <span id="y0-value" class="data"></span>L)
+                        </p></td>
+                        <td style="display: flex; flex-direction: row;">
+                            <p>x&#8320;: </p><input id="x0-slider" type="range" min=0 max=1 step=0.01>
+                            <p>, y&#8320;: </p><input id="y0-slider" type="range" min=0 max=1 step=0.01>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><p>σ: <span id="s0-value" class="data"></span>L</p></td>L
+                        <td><input id="s0-slider" type="range" min=0 max=1 step=0.01></td>
+                    </tr>
+                    <tr>
+                        <td><p>
+                            |p&#8407;&#8320;|: <span id="p0-value" class="data"></span>k,
+                            θ&#8320;: <span id="theta0-value" class="data"></span>&#176;
+                        </p></td>
+                        <td style="display: flex; flex-direction: row;">
+                            <p>|p&#8407;&#8320;|: </p><input id="p0-slider" type="range" min=0 max=10 step=0.01>
+                            <p>, θ&#8320;: </p><input id="theta0-slider" type="range" min=0 max=360 step=1>
+                        </td>
+                    </tr>
+                </table>
             </div>
         </div>
     </div>
