@@ -72,6 +72,27 @@
                 </table>
             </div>
         </div>
+        <div id="description">
+            <p>
+                This is a <em>live</em> simulation of a quantum particle in an electromagnetic field.
+                In order to keep the controls relatively simple, right now it only supports uniform, constant fields.
+                It utilizes an interesting numerical algorithm that is both explicit (don't need to solve algebraic equations like 
+                Crank-Nicholson), and unitary (probability is conserved and the simulation is unconditionally stable).
+                For more information, see the <a href="https://github.com/ecotner/visualizations/tree/master/quantum/2d_square_well/">project on GitHub</a>.
+                Below is a description of the parameters (note that we are using units where c=hbar=m=q=1):
+            </p>
+            <ul>
+                <li>N: the number of grid points along each edge of the simulation. (L is the actual physical length; i.e. N*dx)</li>
+                <li>dx: the physical spacing between grid points.</li>
+                <li>dt: the amount of time between each time step of the simulation.</li>
+                <li>Bz: the magnetic field strength; negative values reverse direction of the field.</li>
+                <li>|E&#8407;|, θ: the magnitude and direction of the electric field, respectively.</li>
+                <li>(x&#8320;, y&#8320;): the initial position of the wave packet on the lattice.</li>
+                <li>σ: the initial width of the wave packet.</li>
+                <li>|p&#8407;&#8320;|, θ&#8320;: the initial momentum/direction of the wave packet.</li>
+            </ul>
+            <p>Any changes to the parameters will not take effect until you click the "Reset" button.</p>
+        </div>
     </div>
     <script src="script_unitary.js"></script>
     <script src="module.js"></script>
