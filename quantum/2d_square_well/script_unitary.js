@@ -3,9 +3,9 @@ var N = 100;
 var dx = 0.1;
 var L = (N-1)*dx;
 var dt = 1e-3;
-var B = 0;
-var Ex = 0;
-var Ey = 0;
+var B = 0.1;
+var E = 0;
+var thetaE = 0;
 var x0 = 0.5;
 var y0 = 0.5;
 var s0 = 0.1;
@@ -38,7 +38,7 @@ function draw(wf) {
             var offset = 4*(id.width * j + i);
             var psi2 = wf.abs2(i * scaleX, j * scaleY);
             _max_psi2 = Math.max(psi2, _max_psi2);
-            var intensity = Math.floor(255*psi2/MAX_PSI2);
+            var intensity = Math.floor(256*psi2/MAX_PSI2);
             pixels[offset+1] = intensity;
             // pixels[offset] = 255 - intensity;
             // pixels[offset+1] = 255 - intensity;
@@ -58,6 +58,7 @@ function startAnimation(wf) {
     FRAME_ID = window.requestAnimationFrame(function() {
         startAnimation(wf);
     });
+    console.log(wf.probMass());
 }
 
 // parameter controls
@@ -130,19 +131,15 @@ theta0Slider.onchange = function(event) {
 
 var ESlider = document.getElementById("E-slider");
 ESlider.onchange = function(event) {
-    var E = parseFloat(ESlider.value);
-    var theta = Math.atan2(Ey, Ex);
-    [Ex, Ey] = [E*Math.cos(theta), E*Math.sin(theta)];
+    E = parseFloat(ESlider.value);
     var text = E.toFixed(2).padStart(5, " ");
     document.getElementById("E-value").innerHTML = text;
 }
 
 var EthetaSlider = document.getElementById("E-theta-slider");
 EthetaSlider.onchange = function(event) {
-    var theta = parseInt(EthetaSlider.value);
-    var E = Math.sqrt(Ex*Ex + Ey*Ey);
-    [Ex, Ey] = [E*Math.cos(theta), E*Math.sin(theta)];
-    var text = theta.toString().padStart(3, " ");
+    thetaE = parseInt(EthetaSlider.value);
+    var text = thetaE.toString().padStart(3, " ");
     document.getElementById("E-theta-value").innerHTML = text;
 }
 
@@ -152,15 +149,18 @@ function init() {
     for (var vars of [
         [BSlider, B], [NSlider, N], [dtSlider, Math.log10(dt)], [dxSlider, Math.log10(dx)],
         [x0Slider, x0], [y0Slider, y0], [s0Slider, s0], [p0Slider, p0], [theta0Slider, theta0],
-        [ESlider, Math.sqrt(Ex*Ex + Ey*Ey)], [EthetaSlider, Math.atan2(Ey, Ex)]
+        [ESlider, E], [EthetaSlider, thetaE]
     ]) {
         [slider, x] = vars;
         slider.value = x;
         slider.onchange();
     }
     // initialize simulation and start animation
-    [ux, uy] = [Math.cos(theta0 * Math.PI / 180), Math.sin(theta0 * Math.PI / 180)]
-    wf = new Module.WaveFunction(N, N, dx, dt, B, Ex, -Ey, x0*L, y0*L, s0*L, p0*ux*k, -p0*uy*k);
+    var px = p0 * k * Math.cos(theta0 * Math.PI / 180);
+    var py = p0 * k * Math.sin(theta0 * Math.PI / 180);
+    var Ex = E * Math.cos(thetaE);
+    var Ey = E * Math.sin(thetaE);
+    wf = new Module.WaveFunction(N, N, dx, dt, B, Ex, Ey, x0*L, y0*L, s0*L, px, -py);
     FRAME_ID = startAnimation(wf);
 }
 
@@ -184,7 +184,10 @@ resetBtn.onclick = function(event) {
     simState = "paused";
     window.cancelAnimationFrame(FRAME_ID);
     wf.delete();
-    [ux, uy] = [Math.cos(theta0 * Math.PI / 180), Math.sin(theta0 * Math.PI / 180)]
-    wf = new Module.WaveFunction(N, N, dx, dt, B, Ex, -Ey, x0*L, y0*L, s0*L, p0*ux*k, -p0*uy*k);
+    var px = p0 * k * Math.cos(theta0 * Math.PI / 180);
+    var py = p0 * k * Math.sin(theta0 * Math.PI / 180);
+    var Ex = E * Math.cos(thetaE);
+    var Ey = E * Math.sin(thetaE);
+    wf = new Module.WaveFunction(N, N, dx, dt, B, Ex, Ey, x0*L, y0*L, s0*L, px, -py);
     draw(wf);
 }

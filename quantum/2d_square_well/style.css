@@ -18,7 +18,7 @@ body {
 
 #outer-container {
     display: flex;
-    height: 100vh;
+    /* height: 100vh; */
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -65,4 +65,13 @@ tr p {
 
 table {
     border-spacing: 15px 0px;
+}
+
+li {
+    color: white;
+}
+
+#description {
+    margin-left: 5%;
+    margin-right: 5%;
 }
