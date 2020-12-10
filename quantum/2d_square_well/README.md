@@ -1,10 +1,10 @@
 # 2D quantum simulation in electromagnetic potential
 
-Simulation of a particle in a 2D box in the presence of electromagnetic fields.
+Simulation of a particle in a 2D box in the presence of electromagnetic fields. [See the simulation in action!](https://ecotner.github.io/visualizations/quantum/2d_square_well/)
 
 ## Physics
 This simulation basically solves the Schrodinger equation coupled to a uniform electric/magnetic field configuration.
-It utilizes an [interesting algorithm](https://aip.scitation.org/doi/pdf/10.1063/1.168483) that is both an _explicit_ numerical scheme and unconditionally stable thanks to a clever decomposition of the Hamiltonian into into groups of commuting two-state systems whose time evolution can be solved for analytically.
+It utilizes an [interesting algorithm](https://aip.scitation.org/doi/pdf/10.1063/1.168483) that is both an _explicit_ numerical scheme and unconditionally stable thanks to a clever decomposition of the Hamiltonian into groups of commuting two-state systems whose time evolution can be solved for analytically.
 This allows for probability mass to be explicitly conserved (within rounding error), so that you can take time steps of arbitrary magnitude without getting exploding solutions.
 I have outlined some of the mathematical details of the algorithm (including some corrections of errors in the original paper!) in [this jupyter notebook](math.ipynb) if you would like to read more.
 (You can also enjoy my `mspaint` diagrams trying to explain commutivity of creation/annihilation operators on a lattice!)
