@@ -83,7 +83,7 @@ class WaveFunction {
         // Precompute/cache repeatedly used variables
         precomputeArrays(B, Ex, Ey);
         // Initialize wave function
-        initializePsi(x0, y0, s0, px0, py0);
+        initializePsi(x0, y0, s0, px0, py0, B);
     }
 
     // Pre-computes the ca, cb, sa, sb arrays to save FLOPS during time evolution
@@ -124,13 +124,14 @@ class WaveFunction {
     }
 
     // Initialize the wave function
-    void initializePsi(double x0, double y0, double s0, double px0, double py0) {
-        double rho, theta;
+    void initializePsi(double x0, double y0, double s0, double px0, double py0, double B) {
+        double rho, theta, k = 2*M_PI/((Nx-1)*dx);
         // set interior points
         for (int i=0; i<Nx; i++) {
             for (int j=0; j<Ny; j++) {
                 rho = exp(-(pow(dx*i-x0, 2) + pow(dx*j-y0, 2))/(2*pow(s0, 2)));
-                theta = dx*(px0*i + py0*j);
+                // not sure what the phase change due to B field should be...
+                theta = px0*dx*i + (py0)*dx*j - B*dx*i*dx*j;
                 psi[Nx*i+j] = rho * complex<double>(cos(theta), sin(theta));
             }
         }

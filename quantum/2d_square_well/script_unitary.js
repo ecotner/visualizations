@@ -160,7 +160,8 @@ function init() {
     var py = p0 * k * Math.sin(theta0 * Math.PI / 180);
     var Ex = E * Math.cos(thetaE);
     var Ey = E * Math.sin(thetaE);
-    wf = new Module.WaveFunction(N, N, dx, dt, B, Ex, Ey, x0*L, y0*L, s0*L, px, -py);
+    var pyOffset = 8*B*k; // presence of magnetic field changes canonical momentum
+    wf = new Module.WaveFunction(N, N, dx, dt, -B, Ex, Ey, x0*L, y0*L, s0*L, px, py - pyOffset);
     FRAME_ID = startAnimation(wf);
 }
 
@@ -188,6 +189,7 @@ resetBtn.onclick = function(event) {
     var py = p0 * k * Math.sin(theta0 * Math.PI / 180);
     var Ex = E * Math.cos(thetaE);
     var Ey = E * Math.sin(thetaE);
-    wf = new Module.WaveFunction(N, N, dx, dt, B, Ex, Ey, x0*L, y0*L, s0*L, px, -py);
+    var pyOffset = 8*B*k;
+    wf = new Module.WaveFunction(N, N, dx, dt, -B, Ex, Ey, x0*L, y0*L, s0*L, px, py - pyOffset);
     draw(wf);
 }
