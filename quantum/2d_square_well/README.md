@@ -26,3 +26,7 @@ Then you can start a local webserver (WASM will not run as a static file)
 ```
 python3 -m http.server 8000
 ```
+
+## TODO
+* Split the wave function into real/imaginary components and get rid of the `complex<double>` types to improve performance.
+* Find gauge-invariant way to specify initial wave packet momentum? Might not be possible!

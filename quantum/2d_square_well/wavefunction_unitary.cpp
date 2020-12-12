@@ -24,10 +24,10 @@ complex<double> I (0, 1);
 
 // bilinear interpolation on a square
 double interp2d(
-    int xL, int xH,
-    int yL, int yH,
-    double z11, double z12, double z21, double z22,
-    double x, double y) {
+    const int xL, const int xH,
+    const int yL, const int yH,
+    const double z11, const double z12, const double z21, const double z22,
+    const double x, const double y) {
     // interpolate along x direction first
     double fx1, fx2, dx = xH - xL;
     if (xL == xH) {fx1 = z11; fx2 = z12;}
@@ -71,7 +71,7 @@ class WaveFunction {
         this->B = B;
         // Allocate memory for all the dynamically-sized arrays
         psi = (complex<double>*) malloc(sizeof(complex<double>) * Nx * Ny);
-        expa0 = (complex<double>*) malloc(sizeof(complex<double>) * Nx * Ny);
+        expVeff = (complex<double>*) malloc(sizeof(complex<double>) * Nx * Ny);
         for (int i=0; i<2; i++) {
             ca[i] = (double*) malloc(sizeof(double) * Nx * Ny);
             cb[i] = (double*) malloc(sizeof(double) * Nx * Ny);
@@ -87,23 +87,28 @@ class WaveFunction {
     }
 
     // Pre-computes the ca, cb, sa, sb arrays to save FLOPS during time evolution
-    void precomputeArrays(double B, double Ex, double Ey) {
+    void precomputeArrays(const double B, const double Ex, const double Ey) {
         // Assuming uniform magnetic field in z direction with gauge \vec{A} = (A, 0, 0) implies A = -B*y
-        double Ca0 = 5./(dx*dx);
-        double Ca1 = -(4./(3*dx*dx));
-        double Ca2 = 1./(12*dx*dx);
+        const double Ca0 = 5./(dx*dx);
+        const double Ca1 = -(4./(3*dx*dx));
+        const double Ca2 = 1./(12*dx*dx);
         complex<double> a[2]; // \alpha coefficients of Hamiltonian
         double b[2]; // \beta coefficients of Hamiltonian
         double A0, A1, A2; // Gauge fields of different offsets
+        double *Veff = (double*) malloc(sizeof(double) * Nx * Ny); // effective potential
+        double Veff_mean = 0; // accumlated mean of effective potential
+        double Veff2_mean = 0; // accumlated mean square of V_eff
         for (int i=0; i<Nx; i++) {
             for (int j=0; j<Ny; j++) {
                 int xy = Nx*i+j;
                 A0 = -B*(j*dx); A1 = -B*((j+1)*dx); A2 = -B*((j+2)*dx);
+                // eff. potential computations
+                Veff[xy] = Ca0 + A0*A0 - dx*(i*Ex + j*Ey);
+                Veff_mean = (Veff[xy] + xy*Veff_mean)/(xy+1);
+                Veff2_mean = (pow(Veff[xy], 2) + xy*Veff2_mean)/(xy+1);
                 // alpha computations
-                double a0 = Ca0 + A0*A0 - dx*(i*Ex + j*Ey);
-                expa0[xy] = exp(-I*a0*dt);
-                a[0] = Ca1 * (1. - I*0.5*dx*(A0 + A1));
-                a[1] = Ca2 * (1. - I*dx*(A0 + A2));
+                a[0] = Ca1 * (1.0 - I*0.5*dx*(A0 + A1));
+                a[1] = Ca2 * (1.0 - I*dx*(A0 + A2));
                 for (int k=0; k<2; k++) {
                     double absa = abs(a[k]);
                     ca[k][xy] = cos(absa*dt);
@@ -121,18 +126,49 @@ class WaveFunction {
                 }
             }
         }
+        // because the physics of the Schrodinger equation is invariant under the addition
+        // of an arbitrary constant to the scalar potential, we can subtract off its spatial mean.
+        // this makes the numerical evolution more stable because now Veff is closer to zero and 
+        // the e^(-i*Veff*t) term is not as rapidly oscillating. this is especially important in the
+        // strong E/B field regimes
+        printf("[INFO]: <Veff>=%f, sigma_Veff=%f; ", Veff_mean, sqrt(Veff2_mean - pow(Veff_mean, 2)));
+        printf("rescaling potential by Veff -> Veff - <Veff> for numerical stability\n");
+        for (int i=0; i<Nx; i++) {
+            for (int j=0; j<Ny; j++) {
+                int xy = Nx*i+j;
+                expVeff[xy] = exp(-I*(Veff[xy]-Veff_mean)*dt);
+            }
+        }
+        free(Veff);
     }
 
     // Initialize the wave function
     void initializePsi(double x0, double y0, double s0, double px0, double py0, double B) {
         double rho, theta, k = 2*M_PI/((Nx-1)*dx);
+        double prob_mass = 0;
+        const double denom = 1/(2*pow(s0, 2));
+        const double pyOffset = 8 * B * 2 * M_PI / ((Nx-1)*dx);
         // set interior points
         for (int i=0; i<Nx; i++) {
             for (int j=0; j<Ny; j++) {
-                rho = exp(-(pow(dx*i-x0, 2) + pow(dx*j-y0, 2))/(2*pow(s0, 2)));
-                // not sure what the phase change due to B field should be...
-                theta = px0*dx*i + (py0)*dx*j - B*dx*i*dx*j;
-                psi[Nx*i+j] = rho * complex<double>(cos(theta), sin(theta));
+                int xy = Nx*i+j;
+                rho = exp(-(pow(dx*i-x0, 2) + pow(dx*j-y0, 2))*denom);
+                prob_mass += pow(rho, 2);
+                theta = px0*dx*i + py0*dx*j; // p.x - the phase of a plane wave
+                // canonical momentum is altered by the presence of magnetic field; have to
+                // modify initial phase to compensate; this can never be perfect though because
+                // the initial condition is not a momentum eigenstate. the choice below has
+                // been determined empirically to work well if |B| << 1, but breaks down otherwise,
+                // leading to unwanted behavior
+                theta += pyOffset*dx*j - B*dx*i*dx*j;
+                psi[xy] = rho * complex<double>(cos(theta), sin(theta));
+            }
+        }
+        prob_mass *= (dx*dx);
+        prob_mass = sqrt(prob_mass); // |psi|^2 = 1
+        for (int i=0; i<Nx; i++) {
+            for (int j=0; j<Ny; j++) {
+                psi[Nx*i+j] /= prob_mass;
             }
         }
         // Dirichlet boundary conditions are automatically enforced?
@@ -266,7 +302,7 @@ class WaveFunction {
             for (int j=0; j<Ny; j++) {
                 int xy = Nx*i+j;
                 // simple phase rotation
-                psi[xy] = expa0[xy] * psi[xy];
+                psi[xy] = expVeff[xy] * psi[xy];
             }
         }
     }
@@ -289,14 +325,14 @@ class WaveFunction {
     // Return absolute square of wave function at interpolated point
     double abs2(double x, double y) {
         x /= dx; y /= dx;
-        int xL = (int) floor(x);
-        int xH = (int) ceil(x);
-        int yL = (int) floor(y);
-        int yH = (int) ceil(y);
-        double z11 = norm(psi[Nx*xL+yL]);
-        double z21 = norm(psi[Nx*xH+yL]);
-        double z12 = norm(psi[Nx*xL+yH]);
-        double z22 = norm(psi[Nx*xH+yH]);
+        const int xL = (int) floor(x);
+        const int xH = (int) ceil(x);
+        const int yL = (int) floor(y);
+        const int yH = (int) ceil(y);
+        const double z11 = norm(psi[Nx*xL+yL]);
+        const double z21 = norm(psi[Nx*xH+yL]);
+        const double z12 = norm(psi[Nx*xL+yH]);
+        const double z22 = norm(psi[Nx*xH+yH]);
         return interp2d(xL, xH, yL, yH, z11, z12, z21, z22, x, y);
     }
 
@@ -314,7 +350,7 @@ class WaveFunction {
     // Destructor; frees memory
     ~WaveFunction() {
         free(psi);
-        free(expa0);
+        free(expVeff);
         for (int i=0; i<2; i++) {
             free(ca[i]);
             free(cb[i]);
@@ -328,7 +364,7 @@ class WaveFunction {
     private:
     int Nx, Ny; // # of grid points
     double dx, dt, B; // parameters
-    complex<double> *psi, *expa0; // wave function values
+    complex<double> *psi, *expVeff; // wave function values
     // diagonal cos(|a|t) and cos(|b|t) rotation matrix elements; index is hop size (minus 1)
     double *ca[2], *cb[2];
     // off-diagonal sin(|a|t) and sin(|b|t) rotation matrix elements; first index is

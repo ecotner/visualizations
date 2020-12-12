@@ -14,6 +14,7 @@ var k = tau/L;
 var p0 = 0;
 var theta0 = 45;
 var simState = "paused";
+var STEPS_PER_FRAME = 6;
 
 // initialize canvases
 var canvas = document.getElementById("canvas"); // canvas to render
@@ -54,11 +55,13 @@ function draw(wf) {
 var FRAME_ID;
 function startAnimation(wf) {
     draw(wf);
-    wf.step(5);
+    wf.step(STEPS_PER_FRAME);
     FRAME_ID = window.requestAnimationFrame(function() {
         startAnimation(wf);
     });
-    console.log(wf.probMass());
+    if (FRAME_ID % 30 == 0) {
+        console.log("prob. mass: " + wf.probMass());
+    }
 }
 
 // parameter controls
@@ -160,8 +163,7 @@ function init() {
     var py = p0 * k * Math.sin(theta0 * Math.PI / 180);
     var Ex = E * Math.cos(thetaE);
     var Ey = E * Math.sin(thetaE);
-    var pyOffset = 8*B*k; // presence of magnetic field changes canonical momentum
-    wf = new Module.WaveFunction(N, N, dx, dt, -B, Ex, Ey, x0*L, y0*L, s0*L, px, py - pyOffset);
+    wf = new Module.WaveFunction(N, N, dx, dt, B, Ex, Ey, x0*L, y0*L, s0*L, px, py);
     FRAME_ID = startAnimation(wf);
 }
 
@@ -190,6 +192,6 @@ resetBtn.onclick = function(event) {
     var Ex = E * Math.cos(thetaE);
     var Ey = E * Math.sin(thetaE);
     var pyOffset = 8*B*k;
-    wf = new Module.WaveFunction(N, N, dx, dt, -B, Ex, Ey, x0*L, y0*L, s0*L, px, py - pyOffset);
+    wf = new Module.WaveFunction(N, N, dx, dt, B, Ex, Ey, x0*L, y0*L, s0*L, px, py);
     draw(wf);
 }
