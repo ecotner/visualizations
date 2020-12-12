@@ -18,7 +18,7 @@ While the numerical heavy-lifting is taken care of by WASM, the JavaScript acts 
 Numerical results are accessed on the JS side and rendered using a canvas HTML element after each time step, and sliders allow the user to tweak parameters and run/pause/restart the simulation on demand.
 
 ## Compliation/running
-If you want to get this working on your local machine, you can fisrt compile the WASM binary from the C++ source by installing the `emscripten` SDK and running
+If you want to get this working on your local machine, you can first compile the WASM binary from the C++ source by installing the `emscripten` SDK and running
 ```
 emcc --bind -o module.js wavefunction_unitary.cpp -O3 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1
 ```
