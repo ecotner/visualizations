@@ -1,0 +1,17 @@
+body {
+    background-color: black;
+    color: white;
+}
+
+#canvas {
+    background-color: black;
+    border: 1px solid red;
+}
+
+#center-div {
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
