@@ -17,7 +17,7 @@ var N = Nx * Ny;
 var [cx, cy] = [0.5, 0.5];
 var R2 = Math.pow(5., 2);
 var TAU = 2*Math.PI;
-var maxIter = 500.;
+var maxIter = 500;
 
 // keeps track of the zoom level and central
 // frame coordinates. also provides utility for
@@ -47,8 +47,8 @@ canvas.onmousemove = function(e) {
     // flip the y axis coordinate so (0, 0) is bottom left
     [mc.i, mc.j] = [e.offsetX, Ny - e.offsetY];
     var [x, y] = zf.pixToCoord(mc.i, mc.j);
-    xCoord.innerHTML = x.toExponential(3);
-    yCoord.innerHTML = y.toExponential(3);
+    xCoord.innerHTML = x.toExponential();
+    yCoord.innerHTML = y.toExponential();
 }
 
 // updates frame and redraws image on scroll
@@ -68,15 +68,34 @@ canvas.onwheel = function(e) {
 }
 
 
+// Sliders for chosing value of c
+var cxSlider = document.getElementById("cx-slider");
+cxSlider.value = cx;
+cxSlider.onchange = function(e) {
+    cx = parseFloat(cxSlider.value);
+    draw();
+}
+
+var cySlider = document.getElementById("cy-slider");
+cySlider.value = cy;
+cySlider.onchange = function(e) {
+    cy = parseFloat(cySlider.value);
+    draw();
+}
+
+
 // calculates the "escape" iterations for any
 // complex number z = x + i*y given the recurrence
 // relation z <- z^2 + c
-function mandelbrot(x, y) {
+function mandelbrot(x, y, cx_, cy_) {
+    var x_
     for (var i=0; i<maxIter; i++) {
         if (x*x + y*y > R2) {
             return i;
         } else {
-            [x, y] = [x*x - y*y + cx, 2*x*y + cy];
+            x_ = x;
+            x = x*x - y*y + cx_;
+            y = 2*x_*y + cy_;
         }
     }
     return 0;
@@ -87,9 +106,9 @@ function cmap(i) {
     var t = TAU*i/20;
     return [
         // irrational frequencies ensures that no color is repeated
-        255*Math.sin(t), // red
-        255*Math.sin(t*Math.SQRT2), // green
-        255*Math.sin(t*Math.PI) // blue
+        Math.floor(255*Math.sin(t)), // red
+        Math.floor(255*Math.sin(t*Math.SQRT2)), // green
+        Math.floor(255*Math.sin(t*Math.PI)) // blue
     ];
 }
 
@@ -102,7 +121,8 @@ function draw() {
         for (var j=0; j<Ny; j++) {
             offset = 4*(Ny*(Ny-j-1)+i);
             [x, y] = zoomFrame.pixToCoord(i, j);
-            var [r, g, b] = cmap(mandelbrot(x, y));
+            var z = mandelbrot(x, y, cx, cy)
+            var [r, g, b] = cmap(z);
             img.data[offset] = Math.floor(r);
             img.data[offset+1] = Math.floor(g);
             img.data[offset+2] = Math.floor(b);
@@ -110,8 +130,8 @@ function draw() {
         }
     }
     ctx.putImageData(img, 0, 0);
-    var z = (2./(Nx*zoomFrame.zoom)).toFixed(1);
-    ctx.fillText(`Zoom: ${z}x`, 0.02*canvas.width, 0.02*canvas.height);
+    var z = Math.log10(2./(Nx*zoomFrame.zoom)).toFixed(2);
+    ctx.fillText(`Zoom: 10^${z}x`, 0.02*canvas.width, 0.02*canvas.height);
     var renderTime = Date.now() - start;
     ctx.fillText(`Render time: ${renderTime} ms`, 0.02*canvas.width, 0.02*canvas.height + 15);
 }

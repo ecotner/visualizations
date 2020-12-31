@@ -4,11 +4,20 @@
     </head>
     <body>
         <div id="center-div">
-            <h1>Fractal explorer</h1>
+            <h1>Fractal explorer (z = z^2 + c)</h1>
             <h4>Check out the project <a href="https://github.com/ecotner/visualizations/tree/master/fractals/single-thread">on GitHub</a></h4>
-            <canvas id="canvas" width="300px" height="300px"></canvas>
+            <canvas id="canvas" width="500px" height="500px"></canvas>
             <h3>z = <span id="x-coord">0.000e+0</span> + <span id="y-coord">0.000e+0</span> * i</h3>
+            <div class="horizontal-align">
+                <h3>Cx:</h3>
+                <input id="cx-slider" type="range" min="-1" max="1" step="any">
+            </div>
+            <div class="horizontal-align">
+                <h3>Cy:</h3>
+                <input id="cy-slider" type="range" min="-1" max="1" step="any">
+            </div>
         </div>
+        <script src="https://cdn.jsdelivr.net/npm/gpu.js@latest/dist/gpu-browser.min.js" type="text/javascript"></script>
         <script src="fractal.js" type="text/javascript"></script>
     </body>
 </html>
