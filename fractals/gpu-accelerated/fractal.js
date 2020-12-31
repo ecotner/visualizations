@@ -48,8 +48,8 @@ canvas.onmousemove = function(e) {
     // flip the y axis coordinate so (0, 0) is bottom left
     [mc.i, mc.j] = [e.offsetX, Ny - e.offsetY];
     var [x, y] = zf.pixToCoord(mc.i, mc.j);
-    xCoord.innerHTML = x.toExponential(3);
-    yCoord.innerHTML = y.toExponential(3);
+    xCoord.innerHTML = x.toExponential();
+    yCoord.innerHTML = y.toExponential();
 }
 
 // updates frame and redraws image on scroll
