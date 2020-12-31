@@ -15,7 +15,7 @@ ctx.textAlign = "left";
 const gpu = new GPU();
 var [Nx, Ny] = [canvas.width, canvas.height];
 var N = Nx * Ny;
-var [cx, cy] = [0.5, 0.5];
+var [cx, cy] = [0., -0.8];
 var R2 = Math.pow(5., 2);
 var TAU = 2*Math.PI;
 var maxIter = 500.;
@@ -65,8 +65,24 @@ canvas.onwheel = function(e) {
     zf.x = oldX - newZoom * (mc.i - Nx/2.);
     zf.y = oldY - newZoom * (mc.j - Ny/2.);
     zf.zoom = newZoom;
-    draw()
+    draw();
 }
+
+// Sliders for chosing value of c
+var cxSlider = document.getElementById("cx-slider");
+cxSlider.value = cx;
+cxSlider.onchange = function(e) {
+    cx = cxSlider.value;
+    draw();
+}
+
+var cySlider = document.getElementById("cy-slider");
+cySlider.value = cy;
+cySlider.onchange = function(e) {
+    cy = cySlider.value;
+    draw();
+}
+
 
 
 // calculates the "escape" iterations for any
@@ -83,13 +99,14 @@ function mandelbrot(x, y) {
     return 0;
 }
 
-const mandelbrotGPU = gpu.createKernel(function(x0, y0, dx, dy) {
+const mandelbrotGPU = gpu.createKernel(function(x0, y0, dx, dy, cx, cy) {
     var x = x0 + dx * this.thread.x;
     var y = y0 + dy * this.thread.y;
     var xTemp = 0;
-    var ans = 0, cx = this.constants.cx, cy = this.constants.cy;
-    var R2 = this.constants.R2;
-    for (var i=0; i<this.constants.maxIter; i++) {
+    var ans = 0
+    // var cx = this.constants.cx, cy = this.constants.cy;
+    var R2 = this.constants.R2, maxIter = this.constants.maxIter;
+    for (var i=0; i<maxIter; i++) {
         if (x*x + y*y > R2) {
             ans = i;
             break;
@@ -110,6 +127,7 @@ const mandelbrotGPU = gpu.createKernel(function(x0, y0, dx, dy) {
     loopMaxIterations: maxIter+1,
 }).setOutput([Nx, Ny]);
 
+
 // maps the escape iteration to an rgb color triplet
 function cmap(i) {
     var t = TAU*i/20;
@@ -128,7 +146,7 @@ function draw() {
     var offset, x, y, x0, y0;
     [x0, y0] = zoomFrame.pixToCoord(0, 0);
     var dx = zoomFrame.zoom
-    var vals = mandelbrotGPU(x0, y0, dx, dx);
+    var vals = mandelbrotGPU(x0, y0, dx, dx, cx, cy);
     for (var i=0; i<Nx; i++) {
         for (var j=0; j<Ny; j++) {
             offset = 4*(Ny*(Ny-j-1)+i);
@@ -140,8 +158,8 @@ function draw() {
         }
     }
     ctx.putImageData(img, 0, 0);
-    var z = (2./(Nx*zoomFrame.zoom)).toFixed(1);
-    ctx.fillText(`Zoom: ${z}x`, 0.02*canvas.width, 0.02*canvas.height);
+    var z = Math.log10(2./(Nx*zoomFrame.zoom)).toFixed(2);
+    ctx.fillText(`Zoom: 10^${z}x`, 0.02*canvas.width, 0.02*canvas.height);
     var renderTime = Date.now() - start;
     ctx.fillText(`Render time: ${renderTime} ms`, 0.02*canvas.width, 0.02*canvas.height + 15);
 }
