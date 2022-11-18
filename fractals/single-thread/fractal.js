@@ -56,7 +56,8 @@ canvas.onwheel = function(e) {
     var zf = zoomFrame;
     var mc = mouseCoords;
     var [oldX, oldY] = zf.pixToCoord(mc.i, mc.j);
-    var newZoom = zf.zoom * Math.exp(0.1*e.deltaY);
+    //var newZoom = zf.zoom * Math.exp(0.1*e.deltaY);
+    var newZoom = zf.zoom * Math.exp(0.1*Math.sign(e.deltaY));
     // this transformation ensures that the canvas pixel
     // the mouse is pointing at maps to the same (x,y)
     // coordinate in both the old/new frames for "smooth"
