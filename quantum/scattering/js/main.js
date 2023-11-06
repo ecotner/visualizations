@@ -1,7 +1,7 @@
 import { BallGame } from "./balls.js"
 
 // init game
-let game = new BallGame(300, 300, 20)
+let game = new BallGame(600, 600, 20)
 
 // attach game screen to DOM
 let canvas = game.cm.canvas
