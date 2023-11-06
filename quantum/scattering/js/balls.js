@@ -1,16 +1,25 @@
 import { CanvasManager } from "./canvas.js";
 
+/** Squared distance between pair of coordinates */
+function dist2(x1, y1, x2, y2) {
+    return (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2)
+}
+
+function isBetween(x, a, b) {
+    return (a <= x) && (x <= b)
+}
+
 export class BallGame {
     /**
      * 
      * @param {number} Nx The number of grid points in the x direction
      * @param {number} Ny The number of grid points in the y direction
-     * @param {number} r The radius of the balls in grid units
+     * @param {number} radius The radius of the balls in grid units
      */
-    constructor(Nx, Ny, r) {
+    constructor(Nx, Ny, radius) {
         this.Nx = Nx
         this.Ny = Ny
-        this.r = r
+        this.radius = radius
         this.cm = new CanvasManager(Ny, Nx)
         this.ballStates = []
         this.wallShapes = []
@@ -20,8 +29,8 @@ export class BallGame {
         this.ay = -100
         this.objCreationState = "balls" // can be either "balls" or "walls"
 
-        // add event listener to create balls when canvas is clicked
-        // give them initial velocity by holding mouse down and moving
+        // add event listener to create balls/walls when canvas is clicked
+        // give balls initial velocity by holding mouse down and moving
         this.cm.canvas.addEventListener("mousedown", (event) => {
             this.mousedownCoords = [event.offsetX, this.cm.height - event.offsetY]
         })
@@ -31,7 +40,7 @@ export class BallGame {
             const [vx, vy] = [x2 - x1, y2 - y1] // velocity units are px/sec
             if (this.objCreationState === "balls") this.addBall(x1, y1, vx, vy)
             else if (this.objCreationState === "walls") this.addWall(x1, y1, x2, y2)
-            else console.log(`unrecognized object creation state '${this.objCreationState}'`)
+            // else console.log(`unrecognized object creation state '${this.objCreationState}'`)
         })
     }
 
@@ -48,7 +57,7 @@ export class BallGame {
         if (y1 > y2) {
             [y1, y2] = [y2, y1]
         }
-        // make sure wall isn't being created inside a pre-existing ball
+        // TODO: make sure wall isn't being created inside a pre-existing ball
         this.wallShapes.push([x1, y1, x2, y2])
         console.log(`added wall with corners (${x1}, ${y1}) and (${x2}, ${y2})`)
     }
@@ -60,7 +69,7 @@ export class BallGame {
         // draw balls
         for (let ball of this.ballStates) {
             ctx.beginPath()
-            ctx.arc(ball[0], ball[1], this.r, 0, 2 * Math.PI)
+            ctx.arc(ball[0], ball[1], this.radius, 0, 2 * Math.PI)
             ctx.fill()
         }
         // draw walls
@@ -84,7 +93,7 @@ export class BallGame {
 
     deleteOffScreenBalls() {
         // delete balls that have fallen off screen
-        const r = this.r
+        const r = this.radius
         for (let i = this.ballStates.length - 1; i >= 0; i--) {
             const ball = this.ballStates[i]
             if (ball[1] + r < 0 || ball[0] + r < 0 || ball[0] - r > this.Nx || ball[1] - r > this.Ny) {
@@ -94,7 +103,7 @@ export class BallGame {
     }
 
     handleBallBallCollisions(dt) {
-        const [ax, ay, r] = [this.ax, this.ay, this.r]
+        const [ax, ay, r] = [this.ax, this.ay, this.radius]
         // look for and correct collision trajectories between balls
         for (let i = 0; i < this.ballStates.length; i++) {
             for (let j = i+1; j < this.ballStates.length; j++) {
@@ -133,11 +142,11 @@ export class BallGame {
                 // and https://williamecraver.wixsite.com/elastic-equations
                 const [x1, y1, x2, y2, vx1, vy1, vx2, vy2] = [b1[0], b1[1], b2[0], b2[1], b1[2], b1[3], b2[2], b2[3]]
                 const [v1, v2, theta1, theta2, phi] = [
-                    Math.sqrt(vx1*vx1 + vy1*vy1),
-                    Math.sqrt(vx2*vx2 + vy2*vy2),
-                    Math.atan2(vy1, vx1),
-                    Math.atan2(vy2, vx2),
-                    Math.atan2((y2 - y1), x2 - x1)
+                    Math.sqrt(vx1*vx1 + vy1*vy1), // speed of ball 1
+                    Math.sqrt(vx2*vx2 + vy2*vy2), // speed of ball 2
+                    Math.atan2(vy1, vx1), // velocity angle ball 1
+                    Math.atan2(vy2, vx2), // velocity direction ball 2
+                    Math.atan2(y2 - y1, x2 - x1) // contact angle (relative to x-axis)
                 ]
                 b1[2] = v2*Math.cos(theta2-phi)*Math.cos(phi) + v1*Math.sin(theta1-phi)*Math.cos(phi+0.5*Math.PI)
                 b1[3] = v2*Math.cos(theta2-phi)*Math.sin(phi) + v1*Math.sin(theta1-phi)*Math.sin(phi+0.5*Math.PI)
@@ -158,11 +167,75 @@ export class BallGame {
             }
         }
     }
+
+    handleBallWallCollisions(dt) {
+        const [ax, ay, r] = [this.ax, this.ay, this.radius]
+        for (let i=0; i < this.ballStates.length; i++){
+            for (let j=0; j < this.wallShapes.length; j++) {
+                const [ball, wall] = [this.ballStates[i], this.wallShapes[j]]
+                // detect if a ball is inside a wall
+                let contactPoint = null // text description of ball-wall contact point
+                let [xw, yw] = [null, null] // coordinates of wall corner (iff collision happens on a corner)
+                if (isBetween(ball[0], wall[0]-r, wall[0]+r) && isBetween(ball[1], wall[1], wall[3])) contactPoint = "left face"
+                else if (isBetween(ball[0], wall[2]-r, wall[2]+r) && isBetween(ball[1], wall[1], wall[3])) contactPoint = "right face"
+                else if (isBetween(ball[1], wall[1]-r, wall[1]+r) && isBetween(ball[0], wall[0], wall[2])) contactPoint = "bottom face"
+                else if (isBetween(ball[1], wall[3]-r, wall[3]+r) && isBetween(ball[0], wall[0], wall[2])) contactPoint = "top face"
+                else if (dist2(ball[0], ball[1], wall[0], wall[1]) < r*r) {
+                    contactPoint = "bottom left corner"
+                    xw = wall[0]
+                    yw = wall[1]
+                }
+                else if (dist2(ball[0], ball[1], wall[0], wall[3]) < r*r) {
+                    contactPoint = "top left corner"
+                    xw = wall[0]
+                    yw = wall[3]
+                }
+                else if (dist2(ball[0], ball[1], wall[2], wall[3]) < r*r) {
+                    contactPoint = "top right corner"
+                    xw = wall[2]
+                    yw = wall[3]
+                }
+                else if (dist2(ball[0], ball[1], wall[2], wall[1]) < r*r) {
+                    contactPoint = "bottom right corner"
+                    xw = wall[2]
+                    yw = wall[1]
+                }
+                if (contactPoint === null) continue
+                // console.log(`collision of ball ${i} with ${contactPoint} of wall ${j}`)
+                // if ball inside wall, back up the ball trajectory
+                ball[3] = ball[3] - ay*dt // vy
+                ball[2] = ball[2] - ax*dt // vx
+                ball[1] = ball[1] - ball[3]*dt - 0.5*ay*dt*dt // y
+                ball[0] = ball[0] - ball[2]*dt - 0.5*ax*dt*dt // x
+                // TODO: figure out at what point they would touch and fast forward to that
+                // determine post-collision velocity
+                if (contactPoint === "top face" || contactPoint === "bottom face") {
+                    ball[3] = -ball[3]
+                }
+                else if (contactPoint === "left face" || contactPoint === "right face") {
+                    ball[2] = -ball[2]
+                }
+                // treat corners as collisions with infinite-mass point particles; see ball-ball collisions reference
+                else {
+                    const [x, y, vx, vy] = ball
+                    const [v1, theta1, phi] = [
+                        Math.sqrt(vx*vx + vy*vy),
+                        Math.atan2(vy, vx),
+                        Math.atan2(yw - y, xw - x)
+                    ]
+                    ball[2] = -v1*Math.cos(theta1-phi)*Math.cos(phi) + v1*Math.sin(theta1-phi)*Math.cos(phi+0.5*Math.PI)
+                    ball[3] = -v1*Math.cos(theta1-phi)*Math.sin(phi) + v1*Math.sin(theta1-phi)*Math.sin(phi+0.5*Math.PI)
+                }
+                // forward post-collision trajectory
+            }
+        }
+    }
     
     updateBallStates(dt) {
         this.updateBallisticTrajectory(dt)
         this.deleteOffScreenBalls()
         this.handleBallBallCollisions(dt)
+        this.handleBallWallCollisions(dt)
     }
 
     run() {
