@@ -1,9 +1,9 @@
-// import { BallGame } from "./balls.js"
+import { BallGame } from "./balls.js"
 import { QuantumGame } from "./quantum.js"
 
 // init game
 // const game = new BallGame(600, 600, 20)
-const game = new QuantumGame(100, 100, 1/10)
+const game = new QuantumGame(400, 400, 1/20)
 
 // attach game screen to DOM
 const canvas = game.cm.canvas

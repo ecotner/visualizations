@@ -94,11 +94,26 @@ export class QuantumGame {
             this.m, this.Nx, this.Ny
         ]
         const dt_2mdx2 = dt / (2*m)
+        let probMass = 0.0
+        // update wavefunction at grid points and measure total probability mass
         // iterate only over grid points [1, N-2] instead of [0, N-1] because boundaries are fixed to zero
         for (let x=1; x < Nx-1; x++) {
             for (let y=1; y < Ny-1; y++) {
-                A_next[x][y] = A_prev[x][y] - dt_2mdx2 * (B[x-1][y] + B[x+1][y] + B[x][y-1] + B[x][y+1] - 4*B[x][y] )
-                B_next[x][y] = B_prev[x][y] + dt_2mdx2 * (A[x-1][y] + A[x+1][y] + A[x][y-1] + A[x][y+1] - 4*A[x][y] )
+                const An = A_prev[x][y] - dt_2mdx2 * (B[x-1][y] + B[x+1][y] + B[x][y-1] + B[x][y+1] - 4*B[x][y])
+                const Bn = B_prev[x][y] + dt_2mdx2 * (A[x-1][y] + A[x+1][y] + A[x][y-1] + A[x][y+1] - 4*A[x][y])
+                probMass += An*An + Bn*Bn
+                A_next[x][y] = An
+                B_next[x][y] = Bn
+            }
+        }
+        // normalize the total probability mass to 1
+        const norm = Math.sqrt(probMass)
+        if (norm > 0) {
+            for (let x=0; x < Nx; x++) {
+                for (let y=0; y < Ny; y++) {
+                    A_next[x][y] /= norm
+                    B_next[x][y] /= norm
+                }
             }
         }
         // swap around the array assignments
@@ -108,22 +123,6 @@ export class QuantumGame {
         this.B = B_next
         this.B_prev = B
         this.B_next = B_prev
-        // normalize the wavefunction so total probability sums to one
-        let probMass = 0.0
-        for (let x=0; x < Nx; x++) {
-            for (let y=0; y < Ny; y++) {
-                probMass += this.A[x][y]*this.A[x][y] + this.B[x][y]*this.B[x][y]
-            }
-        }
-        const norm = Math.sqrt(probMass)
-        if (norm > 0) {
-            for (let x=0; x < Nx; x++) {
-                for (let y=0; y < Ny; y++) {
-                    this.A[x][y] = this.A[x][y] / norm
-                    this.B[x][y] = this.B[x][y] / norm
-                }
-            }
-        }
     }
 
     render() {
